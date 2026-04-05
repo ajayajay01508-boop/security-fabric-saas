@@ -1,0 +1,39 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ai-detection-engine-scaler
+  namespace: security-fabric
+spec:
+  scaleTargetRef:
+    name: ai-detection-engine
+  minReplicaCount: 2
+  maxReplicaCount: 20
+  cooldownPeriod: 60
+  pollingInterval: 15
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka.security-fabric.svc.cluster.local:9092
+        consumerGroup: ai-detection
+        topic: raw-telemetry
+        lagThreshold: "1000"
+        activationLagThreshold: "100"
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: notification-worker-scaler
+  namespace: security-fabric
+spec:
+  scaleTargetRef:
+    name: notification-worker
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  pollingInterval: 15
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka.security-fabric.svc.cluster.local:9092
+        consumerGroup: notification-worker
+        topic: alert-notifications
+        lagThreshold: "100"

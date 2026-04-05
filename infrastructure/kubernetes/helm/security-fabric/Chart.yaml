@@ -1,0 +1,31 @@
+apiVersion: v2
+name: security-fabric
+description: Security Fabric SaaS — Real-time threat detection platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - security
+  - threat-detection
+  - siem
+  - kafka
+  - ml
+home: https://github.com/your-org/security-fabric-saas
+sources:
+  - https://github.com/your-org/security-fabric-saas
+maintainers:
+  - name: Platform Team
+    email: platform@security-fabric.io
+dependencies:
+  - name: postgresql
+    version: "15.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "19.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: kafka
+    version: "29.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: kafka.enabled

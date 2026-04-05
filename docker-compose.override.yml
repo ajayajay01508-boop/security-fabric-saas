@@ -1,0 +1,47 @@
+# docker-compose.override.yml
+# Automatically merged by docker compose for LOCAL DEVELOPMENT.
+# Enables hot-reload, debug ports, and relaxed settings.
+# DO NOT use in production.
+
+version: "3.9"
+
+services:
+  api-gateway:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+    volumes:
+      - ./apps/api-gateway:/app
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: debug
+    ports:
+      - "8000:8000"
+      - "5678:5678"   # debugpy port
+
+  ai-detection-engine:
+    command: python -u processor.py
+    volumes:
+      - ./services/ai-detection-engine:/app
+    environment:
+      LOG_LEVEL: debug
+
+  notification-worker:
+    volumes:
+      - ./services/notification-worker:/app
+    environment:
+      LOG_LEVEL: debug
+
+  voice-alert-service:
+    volumes:
+      - ./services/voice-alert-service:/app
+    environment:
+      LOG_LEVEL: debug
+
+  dashboard-ui:
+    command: npm run dev
+    volumes:
+      - ./apps/dashboard-ui/src:/app/src
+      - ./apps/dashboard-ui/public:/app/public
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_WS_URL: ws://localhost:8000
+      NODE_ENV: development

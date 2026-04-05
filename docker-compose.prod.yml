@@ -1,0 +1,70 @@
+# docker-compose.prod.yml
+# Usage: docker compose -f docker-compose.yaml -f docker-compose.prod.yml up -d
+
+version: "3.9"
+
+services:
+  api-gateway:
+    image: ghcr.io/your-org/security-fabric/api-gateway:${IMAGE_TAG:-latest}
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    env_file: .env.prod
+    volumes: []   # no source mounts in prod
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  ai-detection-engine:
+    image: ghcr.io/your-org/security-fabric/ai-detection-engine:${IMAGE_TAG:-latest}
+    restart: always
+    volumes: []
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 4G
+
+  notification-worker:
+    image: ghcr.io/your-org/security-fabric/notification-worker:${IMAGE_TAG:-latest}
+    restart: always
+    volumes: []
+
+  voice-alert-service:
+    image: ghcr.io/your-org/security-fabric/voice-alert-service:${IMAGE_TAG:-latest}
+    restart: always
+    volumes: []
+
+  dashboard-ui:
+    image: ghcr.io/your-org/security-fabric/dashboard-ui:${IMAGE_TAG:-latest}
+    restart: always
+    volumes: []
+
+  postgres:
+    restart: always
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  redis:
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
+
+  # Disable dev-only services in prod
+  mailhog:
+    profiles: ["dev-only"]
+  kafka-ui:
+    profiles: ["dev-only"]
+
+secrets:
+  db_password:
+    external: true

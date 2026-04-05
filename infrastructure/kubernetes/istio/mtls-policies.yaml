@@ -1,0 +1,49 @@
+# Enforce strict mTLS for all services in the namespace
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: security-fabric
+spec:
+  mtls:
+    mode: STRICT
+---
+# Allow api-gateway to call all internal services
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-api-gateway
+  namespace: security-fabric
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/security-fabric/sa/api-gateway
+---
+# Allow ai-detection-engine to publish to kafka only
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-ai-detection
+  namespace: security-fabric
+spec:
+  selector:
+    matchLabels:
+      app: kafka
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/security-fabric/sa/ai-detection-engine
+---
+# Deny all traffic not explicitly allowed
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: security-fabric
+spec:
+  {}

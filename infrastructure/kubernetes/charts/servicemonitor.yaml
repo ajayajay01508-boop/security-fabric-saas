@@ -1,0 +1,88 @@
+# ServiceMonitor CRDs for Prometheus Operator
+# Apply after installing the kube-prometheus-stack Helm chart.
+# Enables automatic scraping of all Security Fabric services.
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: security-fabric-api-gateway
+  namespace: security-fabric
+  labels:
+    app: api-gateway
+    release: prometheus  # must match your Prometheus Operator selector
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: security-fabric-ai-engine
+  namespace: security-fabric
+  labels:
+    app: ai-detection-engine
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: ai-detection-engine
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: security-fabric-rules
+  namespace: security-fabric
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: security-fabric.alerts
+      interval: 30s
+      rules:
+        - alert: HighThreatRate
+          expr: rate(threat_events_total[5m]) > 10
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High threat rate detected"
+            description: "Threat rate {{ $value | humanize }}/min exceeds threshold"
+
+        - alert: APIHighErrorRate
+          expr: |
+            rate(http_requests_total{status_code=~"5.."}[5m])
+            / rate(http_requests_total[5m]) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "API Gateway error rate > 5%"
+
+        - alert: KafkaLagCritical
+          expr: kafka_consumer_group_lag{group="ai-detection"} > 10000
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "AI detection Kafka lag critical"
+            description: "Lag: {{ $value }} messages"
+
+        - alert: PodCrashLooping
+          expr: |
+            increase(kube_pod_container_status_restarts_total{
+              namespace="security-fabric"
+            }[15m]) > 3
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod crash-looping in security-fabric namespace"

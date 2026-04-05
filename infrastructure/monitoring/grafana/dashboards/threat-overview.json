@@ -1,0 +1,87 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus" }],
+  "title": "Threat Overview",
+  "uid": "threat-overview",
+  "tags": ["security-fabric", "threats"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Threats Detected (1h)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 10 }] }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "increase(threat_events_total[1h])", "legendFormat": "Threats" }]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Critical Alerts",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "threat_events_total{severity='critical'}", "legendFormat": "Critical" }]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Detection Rate (per min)",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "rate(threat_events_total[1m]) * 60", "legendFormat": "threats/min" }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "ML Inference p99 (ms)",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "yellow", "value": 100 }, { "color": "red", "value": 300 }] }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "histogram_quantile(0.99, rate(ml_inference_duration_seconds_bucket[5m])) * 1000", "legendFormat": "p99 ms" }]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Threats by Severity Over Time",
+      "gridPos": { "x": 0, "y": 4, "w": 16, "h": 8 },
+      "fieldConfig": {
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "critical" }, "properties": [{ "id": "color", "value": { "fixedColor": "#ff3b30", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "high" },     "properties": [{ "id": "color", "value": { "fixedColor": "#ff9500", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "medium" },   "properties": [{ "id": "color", "value": { "fixedColor": "#ffd60a", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "low" },      "properties": [{ "id": "color", "value": { "fixedColor": "#30d158", "mode": "fixed" } }] }
+        ]
+      },
+      "targets": [
+        { "datasource": { "type": "prometheus" }, "expr": "rate(threat_events_total{severity='critical'}[5m])", "legendFormat": "critical" },
+        { "datasource": { "type": "prometheus" }, "expr": "rate(threat_events_total{severity='high'}[5m])",     "legendFormat": "high" },
+        { "datasource": { "type": "prometheus" }, "expr": "rate(threat_events_total{severity='medium'}[5m])",   "legendFormat": "medium" },
+        { "datasource": { "type": "prometheus" }, "expr": "rate(threat_events_total{severity='low'}[5m])",      "legendFormat": "low" }
+      ]
+    },
+    {
+      "id": 6, "type": "piechart", "title": "Threat Classification Breakdown",
+      "gridPos": { "x": 16, "y": 4, "w": 8, "h": 8 },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "topk(10, threat_events_total)", "legendFormat": "{{classification}}" }]
+    },
+    {
+      "id": 7, "type": "table", "title": "Top Source IPs",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "topk(20, threat_events_by_source_ip_total)", "legendFormat": "{{source_ip}}" }]
+    },
+    {
+      "id": 8, "type": "gauge", "title": "False Positive Rate",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 6 },
+      "fieldConfig": {
+        "defaults": {
+          "max": 100, "unit": "percent",
+          "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 15 }] }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "100 * rate(threats_false_positive_total[1h]) / rate(threat_events_total[1h])", "legendFormat": "FP Rate %" }]
+    }
+  ]
+}

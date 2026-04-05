@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package securityfabric.v1;
+
+option python_package = "shared.proto";
+
+// ─── Telemetry ─────────────────────────────────────────────────
+
+message TelemetryEvent {
+  string event_id     = 1;
+  double timestamp    = 2;
+  int32  tenant_id    = 3;
+  string source_ip    = 4;
+  string dest_ip      = 5;
+  int32  source_port  = 6;
+  int32  dest_port    = 7;
+  string protocol     = 8;
+  int64  bytes_sent   = 9;
+  int64  bytes_recv   = 10;
+  int32  packets      = 11;
+  int32  duration_ms  = 12;
+  string flags        = 13;
+}
+
+// ─── Threats ───────────────────────────────────────────────────
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_INFO        = 1;
+  SEVERITY_LOW         = 2;
+  SEVERITY_MEDIUM      = 3;
+  SEVERITY_HIGH        = 4;
+  SEVERITY_CRITICAL    = 5;
+}
+
+message ThreatEvent {
+  string   threat_id        = 1;
+  double   timestamp        = 2;
+  Severity severity         = 3;
+  string   classification   = 4;
+  double   confidence_score = 5;
+  string   source_ip        = 6;
+  string   dest_ip          = 7;
+  int32    source_port      = 8;
+  int32    dest_port        = 9;
+  string   protocol         = 10;
+  string   description      = 11;
+  int32    tenant_id        = 12;
+  string   raw_event_id     = 13;
+  double   inference_ms     = 14;
+}
+
+// ─── Alert Notification ────────────────────────────────────────
+
+message AlertNotification {
+  string threat_id      = 1;
+  Severity severity     = 2;
+  string classification = 3;
+  string source_ip      = 4;
+  string dest_ip        = 5;
+  string description    = 6;
+  int32  tenant_id      = 7;
+  repeated string channels = 8;  // ["email", "push", "voice"]
+}
+
+// ─── Services ──────────────────────────────────────────────────
+
+service TelemetryService {
+  rpc IngestEvent (TelemetryEvent) returns (IngestResponse);
+  rpc IngestBatch (TelemetryBatch) returns (IngestResponse);
+}
+
+message IngestResponse {
+  bool   success   = 1;
+  string event_id  = 2;
+  string message   = 3;
+}
+
+message TelemetryBatch {
+  repeated TelemetryEvent events = 1;
+}
+
+service ThreatService {
+  rpc StreamThreats (StreamRequest)   returns (stream ThreatEvent);
+  rpc GetThreatById (ThreatIdRequest) returns (ThreatEvent);
+}
+
+message StreamRequest {
+  int32    tenant_id       = 1;
+  Severity min_severity    = 2;
+}
+
+message ThreatIdRequest {
+  string threat_id = 1;
+}

@@ -1,0 +1,54 @@
+{{- if .Values.aiDetectionEngine.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-detection-engine
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: ai-detection-engine
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+spec:
+  replicas: {{ .Values.aiDetectionEngine.replicaCount }}
+  selector:
+    matchLabels:
+      app: ai-detection-engine
+  template:
+    metadata:
+      labels:
+        app: ai-detection-engine
+    spec:
+      serviceAccountName: ai-detection-engine
+      containers:
+        - name: ai-detection-engine
+          image: {{ .Values.global.imageRegistry }}/{{ .Values.aiDetectionEngine.image.name }}:{{ .Values.global.imageTag }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: security-fabric-config
+            - secretRef:
+                name: {{ .Values.secrets.apiGatewaySecretName }}
+          resources:
+            {{- toYaml .Values.aiDetectionEngine.resources | nindent 12 }}
+---
+{{- if .Values.aiDetectionEngine.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ai-detection-engine-scaler
+  namespace: {{ .Values.global.namespace }}
+spec:
+  scaleTargetRef:
+    name: ai-detection-engine
+  minReplicaCount: {{ .Values.aiDetectionEngine.keda.minReplicas }}
+  maxReplicaCount: {{ .Values.aiDetectionEngine.keda.maxReplicas }}
+  cooldownPeriod: 60
+  pollingInterval: 15
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka.{{ .Values.global.namespace }}.svc.cluster.local:9092
+        consumerGroup: ai-detection
+        topic: raw-telemetry
+        lagThreshold: {{ .Values.aiDetectionEngine.keda.lagThreshold | quote }}
+{{- end }}
+{{- end }}

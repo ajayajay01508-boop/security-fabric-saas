@@ -1,0 +1,59 @@
+{
+  "title": "Kafka Pipeline",
+  "uid": "kafka-pipeline",
+  "tags": ["security-fabric", "kafka"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "15s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Consumer Lag (ai-detection)",
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "yellow", "value": 1000 }, { "color": "red", "value": 10000 }] }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "kafka_consumer_group_lag{group='ai-detection'}", "legendFormat": "lag" }]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Messages/sec (raw-telemetry)",
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 4 },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "rate(kafka_topic_messages_in_total{topic='raw-telemetry'}[1m])", "legendFormat": "msg/s" }]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Threat Events Produced/sec",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "rate(kafka_topic_messages_in_total{topic='threat-events'}[1m])", "legendFormat": "threats/s" }]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Consumer Lag Over Time",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
+      "targets": [
+        { "datasource": { "type": "prometheus" }, "expr": "kafka_consumer_group_lag{group='ai-detection'}",       "legendFormat": "ai-detection" },
+        { "datasource": { "type": "prometheus" }, "expr": "kafka_consumer_group_lag{group='notification-worker'}", "legendFormat": "notification-worker" },
+        { "datasource": { "type": "prometheus" }, "expr": "kafka_consumer_group_lag{group='voice-alert'}",         "legendFormat": "voice-alert" }
+      ]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Topic Throughput",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        { "datasource": { "type": "prometheus" }, "expr": "rate(kafka_topic_messages_in_total{topic='raw-telemetry'}[1m])",    "legendFormat": "raw-telemetry in" },
+        { "datasource": { "type": "prometheus" }, "expr": "rate(kafka_topic_messages_in_total{topic='threat-events'}[1m])",    "legendFormat": "threat-events in" },
+        { "datasource": { "type": "prometheus" }, "expr": "rate(kafka_topic_messages_in_total{topic='alert-notifications'}[1m])","legendFormat": "alert-notifications in" }
+      ]
+    },
+    {
+      "id": 6, "type": "stat", "title": "Broker Status",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "steps": [{ "color": "red", "value": 0 }, { "color": "green", "value": 1 }] },
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } }]
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "kafka_brokers", "legendFormat": "brokers online" }]
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+# Default values for security-fabric Helm chart.
+# Override with: helm install security-fabric . -f my-values.yaml
+
+global:
+  imageRegistry: ghcr.io/your-org/security-fabric
+  imageTag: latest
+  imagePullPolicy: IfNotPresent
+  namespace: security-fabric
+
+# ── API Gateway ───────────────────────────────────────────────
+apiGateway:
+  enabled: true
+  replicaCount: 3
+  image:
+    name: api-gateway
+  resources:
+    requests: { cpu: 250m, memory: 256Mi }
+    limits:   { cpu: 1000m, memory: 1Gi }
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+  service:
+    port: 8000
+  ingress:
+    enabled: true
+    host: api.security-fabric.io
+    tlsSecretName: api-gateway-tls
+
+# ── Dashboard UI ──────────────────────────────────────────────
+dashboardUI:
+  enabled: true
+  replicaCount: 2
+  image:
+    name: dashboard-ui
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits:   { cpu: 200m, memory: 128Mi }
+  ingress:
+    enabled: true
+    host: app.security-fabric.io
+    tlsSecretName: dashboard-ui-tls
+
+# ── AI Detection Engine ───────────────────────────────────────
+aiDetectionEngine:
+  enabled: true
+  replicaCount: 2
+  image:
+    name: ai-detection-engine
+  resources:
+    requests: { cpu: 500m, memory: 512Mi }
+    limits:   { cpu: 2000m, memory: 2Gi }
+  keda:
+    enabled: true
+    lagThreshold: "1000"
+    minReplicas: 2
+    maxReplicas: 20
+
+# ── Notification Worker ───────────────────────────────────────
+notificationWorker:
+  enabled: true
+  replicaCount: 2
+  image:
+    name: notification-worker
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits:   { cpu: 500m, memory: 256Mi }
+  keda:
+    enabled: true
+    lagThreshold: "100"
+    minReplicas: 1
+    maxReplicas: 10
+
+# ── Voice Alert Service ───────────────────────────────────────
+voiceAlertService:
+  enabled: true
+  replicaCount: 1
+  image:
+    name: voice-alert-service
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits:   { cpu: 500m, memory: 256Mi }
+
+# ── Secrets (reference existing k8s Secrets) ─────────────────
+secrets:
+  apiGatewaySecretName: api-gateway-secrets
+  voiceAlertSecretName: voice-alert-secrets
+
+# ── External dependencies ─────────────────────────────────────
+postgresql:
+  enabled: false   # Use external RDS in production
+  auth:
+    username: fabric
+    database: security_fabric
+
+redis:
+  enabled: false   # Use external ElastiCache in production
+
+kafka:
+  enabled: false   # Use external MSK in production
+
+# ── Monitoring ────────────────────────────────────────────────
+monitoring:
+  prometheus:
+    enabled: true
+    serviceMonitor: true
+  grafana:
+    enabled: true

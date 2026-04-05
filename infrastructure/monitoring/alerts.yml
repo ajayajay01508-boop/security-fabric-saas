@@ -1,0 +1,48 @@
+groups:
+  - name: security-fabric
+    interval: 30s
+    rules:
+      - alert: HighThreatRate
+        expr: rate(threat_events_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High threat detection rate"
+          description: "More than 10 threats/minute for 2 minutes. Current rate: {{ $value }}"
+
+      - alert: KafkaConsumerLag
+        expr: kafka_consumer_group_lag{group="ai-detection"} > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka consumer lag too high"
+          description: "AI detection engine falling behind. Lag: {{ $value }} messages"
+
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API Gateway error rate > 5%"
+          description: "Error rate: {{ $value | humanizePercentage }}"
+
+      - alert: SlowInference
+        expr: histogram_quantile(0.99, rate(ml_inference_duration_seconds_bucket[5m])) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ML inference p99 > 500ms"
+          description: "p99 latency: {{ $value | humanizeDuration }}"
+
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been unreachable for more than 1 minute"

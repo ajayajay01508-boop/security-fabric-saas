@@ -1,0 +1,219 @@
+# ─── AI Detection Engine ──────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-detection-engine
+  namespace: security-fabric
+  labels:
+    app: ai-detection-engine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-detection-engine
+  template:
+    metadata:
+      labels:
+        app: ai-detection-engine
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      serviceAccountName: ai-detection-engine
+      containers:
+        - name: ai-detection-engine
+          image: ghcr.io/your-org/security-fabric/ai-detection-engine:latest
+          imagePullPolicy: Always
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-secrets
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-secrets
+                  key: REDIS_URL
+            - name: KAFKA_CONSUMER_GROUP
+              value: ai-detection
+            - name: KAFKA_TOPIC_TELEMETRY
+              value: raw-telemetry
+            - name: KAFKA_TOPIC_THREATS
+              value: threat-events
+            - name: ENVIRONMENT
+              value: production
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+---
+# ─── Notification Worker ──────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-worker
+  namespace: security-fabric
+  labels:
+    app: notification-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notification-worker
+  template:
+    metadata:
+      labels:
+        app: notification-worker
+    spec:
+      serviceAccountName: notification-worker
+      containers:
+        - name: notification-worker
+          image: ghcr.io/your-org/security-fabric/notification-worker:latest
+          imagePullPolicy: Always
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-secrets
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: ENVIRONMENT
+              value: production
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+# ─── Voice Alert Service ──────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voice-alert-service
+  namespace: security-fabric
+  labels:
+    app: voice-alert-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: voice-alert-service
+  template:
+    metadata:
+      labels:
+        app: voice-alert-service
+    spec:
+      serviceAccountName: voice-alert-service
+      containers:
+        - name: voice-alert-service
+          image: ghcr.io/your-org/security-fabric/voice-alert-service:latest
+          imagePullPolicy: Always
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-secrets
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: ENVIRONMENT
+              value: production
+          envFrom:
+            - secretRef:
+                name: voice-alert-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+# ─── Dashboard UI ─────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard-ui
+  namespace: security-fabric
+  labels:
+    app: dashboard-ui
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dashboard-ui
+  template:
+    metadata:
+      labels:
+        app: dashboard-ui
+    spec:
+      containers:
+        - name: dashboard-ui
+          image: ghcr.io/your-org/security-fabric/dashboard-ui:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-ui
+  namespace: security-fabric
+spec:
+  selector:
+    app: dashboard-ui
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+
+---
+# ─── PodDisruptionBudgets ──────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ai-detection-engine-pdb
+  namespace: security-fabric
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ai-detection-engine
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-worker-pdb
+  namespace: security-fabric
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: notification-worker
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dashboard-ui-pdb
+  namespace: security-fabric
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: dashboard-ui

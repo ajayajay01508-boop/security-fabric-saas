@@ -1,0 +1,50 @@
+version: "3.9"
+# docker-compose.test.yml
+# Minimal test environment — only what tests need (no Kafka UI, no Grafana etc.)
+# Usage:
+#   docker compose -f docker-compose.yaml -f docker-compose.test.yml up -d
+#   docker compose exec api-gateway python -m pytest tests/ -v
+#   docker compose -f docker-compose.yaml -f docker-compose.test.yml down
+
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: security_fabric_test   # separate test DB
+
+  api-gateway:
+    environment:
+      DATABASE_URL: postgresql+asyncpg://fabric:fabric_secret@postgres:5432/security_fabric_test
+      ENVIRONMENT: test
+      JWT_SECRET_KEY: test-secret-key-for-ci-only-not-production
+      STRIPE_SECRET_KEY: sk_test_mock
+      LOG_LEVEL: warning
+    command: >
+      sh -c "alembic upgrade head &&
+             python -m pytest tests/ -v --tb=short --no-header -q"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai-detection-engine:
+    command: >
+      sh -c "python -m pytest tests/ -v --tb=short --no-header -q"
+
+  notification-worker:
+    command: >
+      sh -c "python -m pytest tests/ -v --tb=short --no-header -q"
+
+  voice-alert-service:
+    command: >
+      sh -c "python -m pytest tests/ -v --tb=short --no-header -q"
+
+  # Disable heavy services not needed for tests
+  kafka-ui:
+    profiles: ["dev-only"]
+  grafana:
+    profiles: ["dev-only"]
+  prometheus:
+    profiles: ["dev-only"]
+  dashboard-ui:
+    profiles: ["dev-only"]
+  mailhog:
+    profiles: ["dev-only"]

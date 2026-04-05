@@ -1,0 +1,70 @@
+{
+  "title": "API Gateway",
+  "uid": "api-gateway",
+  "tags": ["security-fabric", "api"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Request Rate (req/s)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "sum(rate(http_requests_total[1m]))", "legendFormat": "req/s" }]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Error Rate",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "yellow", "value": 0.01 }, { "color": "red", "value": 0.05 }] }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "sum(rate(http_requests_total{status=~'5..'}[5m])) / sum(rate(http_requests_total[5m]))", "legendFormat": "error rate" }]
+    },
+    {
+      "id": 3, "type": "stat", "title": "p50 Latency (ms)",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m])) * 1000", "legendFormat": "p50" }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "p99 Latency (ms)",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "yellow", "value": 200 }, { "color": "red", "value": 500 }] }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) * 1000", "legendFormat": "p99" }]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Request Latency Percentiles",
+      "gridPos": { "x": 0, "y": 4, "w": 16, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "targets": [
+        { "datasource": { "type": "prometheus" }, "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m])) * 1000", "legendFormat": "p50" },
+        { "datasource": { "type": "prometheus" }, "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) * 1000", "legendFormat": "p95" },
+        { "datasource": { "type": "prometheus" }, "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) * 1000", "legendFormat": "p99" }
+      ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Requests by Status Code",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        { "datasource": { "type": "prometheus" }, "expr": "sum by(status) (rate(http_requests_total[1m]))", "legendFormat": "{{status}}" }
+      ]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Auth Failures",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 10 }] }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus" }, "expr": "rate(http_requests_total{path='/auth/token',status='401'}[5m])", "legendFormat": "auth failures/s" }]
+    }
+  ]
+}
