@@ -2,7 +2,7 @@
 
 > **Real-time threat detection infrastructure. ML-powered. Multi-cloud. Production-grade.**
 
-A distributed security intelligence platform that ingests network telemetry, runs quantized ML inference at the edge, and delivers sub-second threat alerts across voice, push, and email channels — orchestrated across AWS, Azure, and GCP with automated failover.
+A distributed security intelligence platform that ingests network telemetry, runs quantized ML inference at the edge, and delivers sub-second threat alerts across voice, push, and email channels — orchestrated across AWS, Azure, and GCP with automated failover.(LIVE DEMO:https://cloud-guard-de7c7.web.app/)
 
 ---
 
