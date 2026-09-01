@@ -7,6 +7,17 @@
 
 A distributed security intelligence platform that ingests network telemetry, runs quantized ML inference at the edge, and delivers sub-second threat alerts across voice, push, and email channels — orchestrated across AWS, Azure, and GCP with automated failover. [Live demo](https://cloud-guard-de7c7.web.app/)
 
+## Verified quality evidence
+
+- 166 Python/API/service/load-harness tests pass with branch-aware coverage reporting.
+- 12 critical browser workflows run across Chromium, Firefox, WebKit and a Pixel 7 mobile-browser profile in CI (48 project/test combinations).
+- CodeQL scans Python and JavaScript/TypeScript on pull requests and weekly.
+- API responses include correlation IDs and defensive browser security headers.
+- A threshold-enforced local health-route load baseline completed 3,256 requests with 0 errors and 90.9 ms p99 latency; see [`docs/LOAD_TEST_BASELINE.md`](docs/LOAD_TEST_BASELINE.md).
+- The risk-based release strategy and mutation-testing procedure are documented in [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) and [`docs/MUTATION_TESTING.md`](docs/MUTATION_TESTING.md).
+
+The mobile profile validates the responsive web application; this repository does not contain a native Android application and therefore does not claim Appium/Espresso coverage.
+
 ---
 
 ## TABLE OF CONTENTS

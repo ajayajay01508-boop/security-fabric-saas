@@ -31,7 +31,7 @@ jobs:
           pip install ruff==0.6.9
       - name: Reject syntax errors and undefined names
         run: ruff check --select E9,F63,F7,F82 apps/api-gateway/app services shared tests
-      - name: Run 162 tests with coverage
+      - name: Run 166 tests with coverage
         env:
           COVERAGE: '1'
           JWT_SECRET_KEY: test-secret-key-for-ci-only
@@ -62,7 +62,7 @@ jobs:
           cache-dependency-path: apps/dashboard-ui/package-lock.json
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test:e2e
       - name: Publish Playwright report
         if: always()
