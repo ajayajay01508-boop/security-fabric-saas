@@ -13,7 +13,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err.response?.status === 401) {
+    // A failed sign-in must remain on the page so the form can show its error.
+    // Only expire an existing session for protected endpoint failures.
+    if (err.response?.status === 401 && !err.config?.url?.endsWith('/auth/token')) {
       localStorage.removeItem('access_token')
       window.location.href = '/login'
     }

@@ -91,7 +91,7 @@ export function Layout() {
               <p className="text-xs font-medium text-fabric-text truncate">{user?.full_name}</p>
               <p className="text-xs text-fabric-dim truncate">{user?.email}</p>
             </div>
-            <button onClick={logout} className="p-1.5 text-fabric-dim hover:text-fabric-critical transition-colors rounded">
+            <button aria-label="Sign out" onClick={logout} className="p-1.5 text-fabric-dim hover:text-fabric-critical transition-colors rounded">
               <LogOut className="w-4 h-4" />
             </button>
           </div>

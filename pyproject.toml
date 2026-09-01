@@ -50,6 +50,20 @@ files = ["apps/api-gateway/app"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 
+[tool.coverage.run]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+    "*/alembic/*",
+    "*/train_model.py",
+    "scripts/cloud-failover.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.backends.legacy:build"

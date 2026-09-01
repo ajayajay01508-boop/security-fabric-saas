@@ -44,7 +44,7 @@ pre-commit install
 - Linter: `ruff check` (E, W, F, I, B, UP, S, N rules)
 - Type hints on all public functions
 - Async all the way — no synchronous DB or network calls in FastAPI routes
-- Structured logging via `shared/python-utils/logging.py` — no bare `print()`
+- Structured logging via `shared/python-utils/structured_logging.py` — no bare `print()`
 
 ### TypeScript / React
 

@@ -1,4 +1,4 @@
-.PHONY: help up down build logs ps clean seed test test-api test-ai test-ui \
+.PHONY: help up down build logs ps clean seed test test-api test-ai test-ui test-quality coverage \
         shell-api shell-db migrate rollback lint fmt k8s-deploy k8s-status \
         smoke health failover
 
@@ -90,8 +90,12 @@ shell-redis: ## Open Redis CLI
 	docker compose exec redis redis-cli
 
 # ── Testing ───────────────────────────────────────────────────
-test: test-api test-ai test-ui ## Run all tests
+test: ## Run all 162 Python tests
+	bash scripts/run-python-tests.sh
 	@echo "$(GREEN)✓ All tests complete$(NC)"
+
+coverage: ## Run Python suites and publish terminal, XML, and HTML coverage
+	COVERAGE=1 bash scripts/run-python-tests.sh
 
 test-api: ## Run API Gateway tests
 	@echo "$(CYAN)Testing API Gateway...$(NC)"
@@ -102,7 +106,7 @@ test-api: ## Run API Gateway tests
 		JWT_SECRET_KEY="test-secret" \
 		STRIPE_SECRET_KEY="sk_test_mock" \
 		ENVIRONMENT="test" \
-		python -m pytest tests/ -v --tb=short 2>&1 || true
+		python -m pytest tests/ -q --tb=short
 	@echo "$(YELLOW)(Run inside container for full integration: make test-api-docker)$(NC)"
 
 test-api-docker: ## Run API Gateway tests inside Docker
@@ -118,7 +122,13 @@ test-ai-stress: ## Run AI engine stress tests (1000 iterations)
 
 test-ui: ## Type-check dashboard
 	@echo "$(CYAN)Type-checking Dashboard UI...$(NC)"
-	cd apps/dashboard-ui && npx tsc --noEmit 2>&1 || true
+	cd apps/dashboard-ui && npm run typecheck
+
+test-e2e: ## Run dashboard browser workflows in Chromium
+	cd apps/dashboard-ui && npm run test:e2e
+
+test-quality: ## Run load-harness quality tests
+	python -m pytest tests/quality -q --tb=short
 
 test-notif: ## Run Notification Worker tests
 	cd services/notification-worker && python -m pytest tests/ -v --tb=short
@@ -142,10 +152,9 @@ load-stress: ## Heavy load test (60s, 50 workers)
 
 lint: ## Lint all Python and TypeScript
 	@echo "$(CYAN)Linting Python...$(NC)"
-	python -m ruff check apps/api-gateway/app/ services/ shared/ 2>/dev/null || \
-		echo "  (install ruff: pip install ruff)"
-	@echo "$(CYAN)Linting TypeScript...$(NC)"
-	cd apps/dashboard-ui && npm run lint 2>/dev/null || true
+	python -m ruff check --select E9,F63,F7,F82 apps/api-gateway/app/ services/ shared/ tests/
+	@echo "$(CYAN)Type-checking TypeScript...$(NC)"
+	cd apps/dashboard-ui && npm run typecheck
 
 fmt: ## Auto-format Python code
 	python -m ruff format apps/api-gateway/app/ services/ shared/ 2>/dev/null || \

@@ -4,7 +4,7 @@ from sqlalchemy import select, desc, func
 from pydantic import BaseModel
 from typing import Optional, List
 import csv, io
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.database import get_db
 from app.models.alert import Alert, AlertStatus, SeverityLevel
@@ -27,6 +27,9 @@ class AlertResponse(BaseModel):
     protocol: Optional[str]
     confidence_score: Optional[float]
     description: Optional[str]
+    acknowledged_by: Optional[int]
+    acknowledged_at: Optional[datetime]
+    resolved_at: Optional[datetime]
     created_at: datetime
 
     class Config:
@@ -126,7 +129,7 @@ async def acknowledge_alert(
 
     alert.status = AlertStatus.ACKNOWLEDGED
     alert.acknowledged_by = current_user.id
-    alert.acknowledged_at = datetime.utcnow()
+    alert.acknowledged_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(alert)
     return alert
@@ -144,7 +147,7 @@ async def resolve_alert(
         raise HTTPException(status_code=404, detail="Alert not found")
 
     alert.status = AlertStatus.RESOLVED
-    alert.resolved_at = datetime.utcnow()
+    alert.resolved_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(alert)
     return alert

@@ -48,8 +48,9 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-mono text-fabric-dim uppercase tracking-widest mb-1.5">Email</label>
+              <label htmlFor="login-email" className="block text-xs font-mono text-fabric-dim uppercase tracking-widest mb-1.5">Email</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -59,9 +60,10 @@ export function LoginPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-mono text-fabric-dim uppercase tracking-widest mb-1.5">Password</label>
+              <label htmlFor="login-password" className="block text-xs font-mono text-fabric-dim uppercase tracking-widest mb-1.5">Password</label>
               <div className="relative">
                 <input
+                  id="login-password"
                   type={showPw ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -71,6 +73,7 @@ export function LoginPage() {
                 />
                 <button
                   type="button"
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPw(!showPw)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-fabric-dim hover:text-fabric-text transition-colors"
                 >

@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+.venv/
+venv/
+
+# JavaScript / TypeScript
+node_modules/
+dist/
+.vite/
+coverage/
+playwright-report/
+test-results/
+
+# Environment and local runtime state
+.env
+.env.*
+!.env.example
+*.log
+*.pid
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Build and deployment artifacts
+*.zip
+*.tar
+*.tar.gz
+

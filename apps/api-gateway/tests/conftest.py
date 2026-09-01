@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 
 from app.main import app
 from app.database import Base, get_db
+from app.middleware.rate_limit import _store
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -31,6 +32,9 @@ async def override_get_db():
 
 @pytest_asyncio.fixture(autouse=True)
 async def setup_db():
+    # Rate limiting uses an in-process fallback in tests. Reset it around each
+    # case so one test cannot exhaust another test's allowance.
+    _store.clear()
     async with engine.begin() as conn:
         from app.models import user, alert, subscription  # noqa: F401
         await conn.run_sync(Base.metadata.create_all)
@@ -38,6 +42,7 @@ async def setup_db():
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    _store.clear()
     app.dependency_overrides.clear()
 
 

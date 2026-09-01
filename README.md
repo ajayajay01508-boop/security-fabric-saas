@@ -1,8 +1,11 @@
 # SECURITY FABRIC SAAS
 
+[![Quality Gates](https://github.com/ajayajay01508-boop/security-fabric-saas/actions/workflows/quality.yml/badge.svg)](https://github.com/ajayajay01508-boop/security-fabric-saas/actions/workflows/quality.yml)
+![Branch-aware coverage](https://img.shields.io/badge/branch--aware%20coverage-60%25-yellow)
+
 > **Real-time threat detection infrastructure. ML-powered. Multi-cloud. Production-grade.**
 
-A distributed security intelligence platform that ingests network telemetry, runs quantized ML inference at the edge, and delivers sub-second threat alerts across voice, push, and email channels — orchestrated across AWS, Azure, and GCP with automated failover.(LIVE DEMO:https://cloud-guard-de7c7.web.app/)
+A distributed security intelligence platform that ingests network telemetry, runs quantized ML inference at the edge, and delivers sub-second threat alerts across voice, push, and email channels — orchestrated across AWS, Azure, and GCP with automated failover. [Live demo](https://cloud-guard-de7c7.web.app/)
 
 ---
 
@@ -301,7 +304,7 @@ python -m grpc_tools.protoc -I shared/proto \
 Common decorators and utilities available to all Python services:
 
 ```python
-from shared.python_utils.logging import structured_logger
+from shared.python_utils.structured_logging import get_logger
 from shared.python_utils.security import require_auth, rate_limit
 
 logger = structured_logger(__name__)

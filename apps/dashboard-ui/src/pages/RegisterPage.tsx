@@ -58,8 +58,9 @@ export function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {fields.map(({ key, label, type, placeholder }) => (
               <div key={key}>
-                <label className="block text-xs font-mono text-fabric-dim uppercase tracking-widest mb-1.5">{label}</label>
+                <label htmlFor={`register-${key}`} className="block text-xs font-mono text-fabric-dim uppercase tracking-widest mb-1.5">{label}</label>
                 <input
+                  id={`register-${key}`}
                   type={type}
                   value={form[key]}
                   onChange={set(key)}

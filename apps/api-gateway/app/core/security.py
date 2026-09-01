@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -11,7 +11,13 @@ from app.database import get_db
 from app.models.user import User
 from sqlalchemy import select
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt_sha256 pre-hashes arbitrary-length Unicode input before bcrypt's
+# 72-byte limit. Keep bcrypt as a verifier so existing hashes still work.
+pwd_context = CryptContext(
+    schemes=["bcrypt_sha256", "bcrypt"],
+    default="bcrypt_sha256",
+    deprecated=["bcrypt"],
+)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
@@ -25,14 +31,16 @@ def hash_password(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.JWT_EXPIRE_MINUTES))
+    expire = datetime.now(UTC) + (
+        expires_delta or timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
+    )
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=30)
+    expire = datetime.now(UTC) + timedelta(days=30)
     to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 

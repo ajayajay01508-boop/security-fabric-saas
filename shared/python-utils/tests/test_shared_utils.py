@@ -10,11 +10,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'shared',
 
 class TestJSONFormatter:
     def test_get_logger_returns_logger(self):
-        from logging import get_logger as _  # fallback
         import importlib.util, pathlib
         spec = importlib.util.spec_from_file_location(
             "sf_logging",
-            pathlib.Path(__file__).parent.parent.parent.parent / "shared/python-utils/logging.py"
+            pathlib.Path(__file__).parent.parent / "structured_logging.py"
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -25,7 +24,7 @@ class TestJSONFormatter:
         import importlib.util, pathlib, io
         spec = importlib.util.spec_from_file_location(
             "sf_logging2",
-            pathlib.Path(__file__).parent.parent.parent.parent / "shared/python-utils/logging.py"
+            pathlib.Path(__file__).parent.parent / "structured_logging.py"
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -48,7 +47,7 @@ class TestJSONFormatter:
         import importlib.util, pathlib, io
         spec = importlib.util.spec_from_file_location(
             "sf_logging3",
-            pathlib.Path(__file__).parent.parent.parent.parent / "shared/python-utils/logging.py"
+            pathlib.Path(__file__).parent.parent / "structured_logging.py"
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
