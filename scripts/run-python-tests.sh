@@ -13,7 +13,8 @@ run_suite() {
     cd "$PROJECT_ROOT/$directory"
     if [[ "${COVERAGE:-0}" == "1" ]]; then
       "$PYTHON_BIN" -m pytest "$@" -q --tb=short \
-        --cov="$coverage_target" --cov-append --cov-report=
+        --cov="$coverage_target" --cov-append --cov-branch \
+        --cov-config="$PROJECT_ROOT/pyproject.toml" --cov-report=
     else
       "$PYTHON_BIN" -m pytest "$@" -q --tb=short
     fi
