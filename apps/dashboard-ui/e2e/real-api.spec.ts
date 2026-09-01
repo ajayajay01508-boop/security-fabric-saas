@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test.skip(!process.env.REAL_API_E2E, 'requires the real API integration environment')
 
 test('registers and signs in through the real API and SQLite database', async ({ page, request }) => {
-  const email = `real-e2e-${Date.now()}@security.test`
+  const email = `real-e2e-${Date.now()}@securitytest.io`
   const password = 'SecurePassword123'
   const registration = await request.post('http://127.0.0.1:8000/auth/register', {
     data: {

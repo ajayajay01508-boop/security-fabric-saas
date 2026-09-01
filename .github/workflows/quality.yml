@@ -124,7 +124,7 @@ jobs:
       - name: Install Appium test dependencies
         run: |
           pip install -r quality-lab/android-appium/requirements.txt
-          npm install --global appium@2.15.0
+          npm install --global appium@3.0.2
           appium driver install uiautomator2
       - name: Run 12 native Android tests
         uses: reactivecircus/android-emulator-runner@v2
