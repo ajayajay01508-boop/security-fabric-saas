@@ -1,0 +1,7 @@
+<resources>
+    <item name="email" type="id" />
+    <item name="password" type="id" />
+    <item name="login" type="id" />
+    <item name="clear" type="id" />
+    <item name="status" type="id" />
+</resources>
