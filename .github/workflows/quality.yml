@@ -31,7 +31,7 @@ jobs:
           pip install ruff==0.6.9
       - name: Reject syntax errors and undefined names
         run: ruff check --select E9,F63,F7,F82 apps/api-gateway/app services shared tests
-      - name: Run 166 tests with coverage
+      - name: Run Python tests with branch coverage
         env:
           COVERAGE: '1'
           JWT_SECRET_KEY: test-secret-key-for-ci-only
@@ -45,6 +45,10 @@ jobs:
             coverage.xml
             htmlcov/
           retention-days: 14
+      - name: Run authenticated API performance gates
+        env:
+          PYTHON_BIN: python
+        run: bash scripts/run-authenticated-load-baseline.sh
 
   dashboard-quality:
     name: Dashboard build and Playwright
@@ -71,3 +75,65 @@ jobs:
           name: playwright-report
           path: apps/dashboard-ui/playwright-report/
           retention-days: 14
+
+  real-stack-browser:
+    name: Real API and database browser E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: apps/dashboard-ui/package-lock.json
+      - run: |
+          pip install -r apps/api-gateway/requirements.txt
+          pip install -r apps/api-gateway/requirements-test.txt
+      - working-directory: apps/dashboard-ui
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Verify login against real API and SQLite database
+        run: bash scripts/run-real-stack-browser-test.sh
+
+  android-appium:
+    name: Android Appium tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Build Android quality-lab APK
+        working-directory: quality-lab/android-appium
+        run: gradle assembleDebug
+      - name: Install Appium test dependencies
+        run: |
+          pip install -r quality-lab/android-appium/requirements.txt
+          npm install --global appium@3.0.2
+          appium driver install uiautomator2
+      - name: Run 12 native Android tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          script: |
+            adb install -r quality-lab/android-appium/app/build/outputs/apk/debug/app-debug.apk
+            appium --log-level warn > /tmp/appium.log 2>&1 &
+            for i in {1..30}; do curl -fsS http://127.0.0.1:4723/status && break; sleep 1; done
+            pytest quality-lab/android-appium/tests -q

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import os
 
 from app.database import init_db
 from app.routers import auth, alerts, payments, telemetry, websocket, metrics, admin
@@ -17,10 +18,13 @@ async def lifespan(app: FastAPI):
     validate_environment()
     log_startup_banner()
     await init_db()
-    await kafka_producer.start()
+    external_services_enabled = os.getenv("SKIP_EXTERNAL_SERVICES", "0") != "1"
+    if external_services_enabled:
+        await kafka_producer.start()
     yield
-    await kafka_producer.stop()
-    await redis_client.close()
+    if external_services_enabled:
+        await kafka_producer.stop()
+        await redis_client.close()
 
 
 app = FastAPI(

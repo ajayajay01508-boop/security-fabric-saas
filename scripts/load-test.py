@@ -116,7 +116,7 @@ TELEMETRY_EVENT = {
 
 
 def worker_loop(base_url: str, scenario: str, token: Optional[str],
-                stats: Stats, stop_event: threading.Event):
+                stats: Stats, stop_event: threading.Event, think_time_ms: int = 0):
     auth = {"Authorization": f"Bearer {token}"} if token else {}
 
     while not stop_event.is_set():
@@ -143,6 +143,8 @@ def worker_loop(base_url: str, scenario: str, token: Optional[str],
                                    data=TELEMETRY_EVENT, headers=auth)
 
         stats.record(lat, status)
+        if think_time_ms:
+            stop_event.wait(think_time_ms / 1000)
 
 
 def print_progress(stats: Stats, elapsed: float, duration: float):
@@ -159,7 +161,8 @@ def print_progress(stats: Stats, elapsed: float, duration: float):
     )
 
 
-def run_load_test(base_url: str, workers: int, duration: int, scenario: str):
+def run_load_test(base_url: str, workers: int, duration: int, scenario: str,
+                  think_time_ms: int = 0):
     print(f"\n  Target   : {base_url}")
     print(f"  Scenario : {scenario}")
     print(f"  Workers  : {workers}")
@@ -178,7 +181,7 @@ def run_load_test(base_url: str, workers: int, duration: int, scenario: str):
     threads = [
         threading.Thread(
             target=worker_loop,
-            args=(base_url, scenario, token, stats, stop_event),
+            args=(base_url, scenario, token, stats, stop_event, think_time_ms),
             daemon=True,
         )
         for _ in range(workers)
@@ -240,13 +243,17 @@ def main():
     p.add_argument("--scenario", default="full",
                    choices=["health", "auth", "alerts", "telemetry", "full"],
                    help="Which endpoint(s) to hammer")
+    p.add_argument("--think-time-ms", type=int, default=0,
+                   help="Delay between each worker request (rate shaping)")
     args = p.parse_args()
 
     print("╔═══════════════════════════════════════════╗")
     print("║   Security Fabric — Load Test             ║")
     print("╚═══════════════════════════════════════════╝")
 
-    rc = run_load_test(args.url, args.workers, args.duration, args.scenario)
+    rc = run_load_test(
+        args.url, args.workers, args.duration, args.scenario, args.think_time_ms
+    )
     raise SystemExit(rc)
 
 

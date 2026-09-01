@@ -1,4 +1,5 @@
 import { expect, Page, test } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 
 const user = {
   id: 1,
@@ -148,4 +149,31 @@ test('downloads the current alert set as CSV', async ({ page }) => {
 test('shows a not-found page for an unknown route', async ({ page }) => {
   await page.goto('/not-a-real-route')
   await expect(page.getByText('404')).toBeVisible()
+})
+
+test('login has no serious or critical accessibility violations', async ({ page }) => {
+  await page.goto('/login')
+  const results = await new AxeBuilder({ page }).analyze()
+  expect(results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact || ''))).toEqual([])
+})
+
+test('authenticated dashboard has no serious or critical accessibility violations', async ({ page }) => {
+  await openAuthenticated(page)
+  const results = await new AxeBuilder({ page }).analyze()
+  expect(results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact || ''))).toEqual([])
+})
+
+test('login form supports keyboard-only navigation', async ({ page }) => {
+  await mockApi(page)
+  await page.goto('/login')
+  await page.keyboard.press('Tab')
+  await expect(page.getByLabel('Email')).toBeFocused()
+  await page.keyboard.type(user.email)
+  await page.keyboard.press('Tab')
+  await expect(page.locator('#login-password')).toBeFocused()
+  await page.keyboard.type('correct-password')
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Enter')
+  await expect(page).toHaveURL(/\/dashboard$/)
 })

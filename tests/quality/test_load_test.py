@@ -2,7 +2,10 @@
 
 import importlib.util
 import json
+import threading
 from pathlib import Path
+
+import pytest
 
 MODULE_PATH = Path(__file__).parents[2] / "scripts" / "load-test.py"
 SPEC = importlib.util.spec_from_file_location("load_test", MODULE_PATH)
@@ -70,3 +73,68 @@ def test_http_converts_transport_failures_to_status_zero(monkeypatch):
     status, latency = load_test.http("GET", "https://example.test/health")
     assert status == 0
     assert latency >= 0
+
+
+def test_get_token_registers_and_authenticates(monkeypatch):
+    monkeypatch.setattr(load_test, "http", lambda *_args, **_kwargs: (201, 1.0))
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self):
+            return json.dumps({"access_token": "verified-token"}).encode()
+
+    monkeypatch.setattr(load_test.urllib.request, "urlopen", lambda *_a, **_k: Response())
+    assert load_test.get_token("https://api.test") == "verified-token"
+
+
+def test_get_token_returns_none_on_transport_error(monkeypatch):
+    monkeypatch.setattr(
+        load_test.urllib.request,
+        "urlopen",
+        lambda *_a, **_k: (_ for _ in ()).throw(TimeoutError("offline")),
+    )
+    assert load_test.get_token("https://api.test") is None
+
+
+@pytest.mark.parametrize("scenario", ["health", "auth", "alerts", "telemetry", "full"])
+def test_each_worker_scenario_records_a_response(monkeypatch, scenario):
+    stop = threading.Event()
+
+    class OneRequestStats(load_test.Stats):
+        def record(self, latency_ms, status):
+            super().record(latency_ms, status)
+            stop.set()
+
+    monkeypatch.setattr(load_test, "http", lambda *_a, **_k: (200, 3.0))
+    if scenario == "full":
+        import random
+        monkeypatch.setattr(random, "choice", lambda _choices: "health")
+
+    stats = OneRequestStats()
+    load_test.worker_loop("https://api.test", scenario, "token", stats, stop)
+    assert stats.total == 1
+    assert stats.success == 1
+
+
+def test_load_test_enforces_error_rate_threshold(monkeypatch):
+    def failing_worker(_url, _scenario, _token, stats, stop, _think_time):
+        stats.record(5.0, 500)
+        stop.set()
+
+    monkeypatch.setattr(load_test, "worker_loop", failing_worker)
+    monkeypatch.setattr(load_test, "get_token", lambda _url: "token")
+    assert load_test.run_load_test("https://api.test", 1, 0, "auth") == 1
+
+
+def test_load_test_passes_healthy_results(monkeypatch):
+    def passing_worker(_url, _scenario, _token, stats, stop, _think_time):
+        stats.record(5.0, 200)
+        stop.set()
+
+    monkeypatch.setattr(load_test, "worker_loop", passing_worker)
+    assert load_test.run_load_test("https://api.test", 1, 0, "health") == 0
