@@ -57,8 +57,9 @@ async function mockApi(page: Page, options: { loginFails?: boolean } = {}) {
 }
 
 async function openAuthenticated(page: Page, path = '/dashboard') {
-  await page.addInitScript(() => localStorage.setItem('access_token', 'test-token'))
   await mockApi(page)
+  await page.goto('/login')
+  await page.evaluate(() => localStorage.setItem('access_token', 'test-token'))
   await page.goto(path)
 }
 
@@ -70,7 +71,7 @@ test('redirects an anonymous user to sign in', async ({ page }) => {
 
 test('toggles password visibility accessibly', async ({ page }) => {
   await page.goto('/login')
-  const password = page.getByLabel('Password')
+  const password = page.locator('#login-password')
   await expect(password).toHaveAttribute('type', 'password')
   await page.getByRole('button', { name: 'Show password' }).click()
   await expect(password).toHaveAttribute('type', 'text')
@@ -80,7 +81,7 @@ test('shows a stable error for invalid credentials', async ({ page }) => {
   await mockApi(page, { loginFails: true })
   await page.goto('/login')
   await page.getByLabel('Email').fill('wrong@example.com')
-  await page.getByLabel('Password').fill('wrong-password')
+  await page.locator('#login-password').fill('wrong-password')
   await page.getByRole('button', { name: /sign in/i }).click()
   await expect(page.getByText('Invalid credentials. Check your email and password.')).toBeVisible()
 })
@@ -89,7 +90,7 @@ test('signs in and opens the threat dashboard', async ({ page }) => {
   await mockApi(page)
   await page.goto('/login')
   await page.getByLabel('Email').fill(user.email)
-  await page.getByLabel('Password').fill('correct-password')
+  await page.locator('#login-password').fill('correct-password')
   await page.getByRole('button', { name: /sign in/i }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
   await expect(page.getByRole('heading', { name: 'Threat Dashboard' })).toBeVisible()
@@ -148,4 +149,3 @@ test('shows a not-found page for an unknown route', async ({ page }) => {
   await page.goto('/not-a-real-route')
   await expect(page.getByText('404')).toBeVisible()
 })
-
