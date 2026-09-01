@@ -4,7 +4,6 @@ In production, load an ONNX / PyTorch quantized model from models/.
 For local dev, a rule-based heuristic engine is used automatically.
 """
 import os
-import random
 import logging
 from typing import Optional
 
@@ -98,27 +97,30 @@ class ThreatDetector:
             score += 0.6
             reasons.append("known C2 port")
 
-        # Add some probabilistic noise for realistic simulation
-        score += random.uniform(-0.1, 0.15)
         score = max(0.0, min(1.0, score))
 
-        is_threat = score > 0.35
+        is_threat = score >= 0.35
 
         classification = None
         severity = "info"
         if is_threat:
-            if score > 0.75:
-                classification = random.choice(["Data Exfiltration", "Command & Control", "Ransomware Communication"])
+            # Deterministic decisions make identical telemetry reproducible in
+            # production, tests, and incident reviews.
+            if dst_port in {4444, 1337}:
+                classification = "Command & Control"
                 severity = "critical"
-            elif score > 0.55:
-                classification = random.choice(["DDoS", "SQL Injection", "Lateral Movement"])
+            elif bytes_sent > 50_000_000:
+                classification = "Data Exfiltration"
+                severity = "critical"
+            elif packets > 10000:
+                classification = "DDoS"
                 severity = "high"
-            elif score > 0.40:
-                classification = random.choice(["Brute Force SSH", "DNS Tunneling"])
-                severity = "medium"
-            else:
+            elif protocol == "telnet":
+                classification = "Lateral Movement"
+                severity = "high"
+            elif dst_port in SUSPICIOUS_PORTS:
                 classification = "Port Scan"
-                severity = "low"
+                severity = "medium"
 
         description = (
             f"Heuristic detection: {', '.join(reasons)}" if reasons

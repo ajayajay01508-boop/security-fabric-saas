@@ -102,9 +102,10 @@ async def test_ingest_optional_fields_default(client, auth_headers):
 
 @pytest.mark.asyncio
 async def test_ingest_kafka_failure_handled(client, auth_headers):
-    """Kafka send failure should not crash the endpoint."""
+    """Kafka send failure should become a stable, non-leaking API response."""
     with patch("app.routers.telemetry.kafka_producer") as mock_kafka:
         mock_kafka.send = AsyncMock(side_effect=Exception("Kafka down"))
         r = await client.post("/telemetry/ingest", json=VALID_EVENT, headers=auth_headers)
-    # Should still return 200 — kafka failures are logged, not surfaced
-    assert r.status_code in (200, 500)
+    assert r.status_code == 503
+    assert r.json() == {"detail": "Telemetry queue unavailable"}
+    assert "Kafka down" not in r.text

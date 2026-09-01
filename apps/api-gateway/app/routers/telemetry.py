@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
+import logging
 import uuid
 import time
 
@@ -9,6 +10,7 @@ from app.core.security import get_current_active_user
 from app.models.user import User
 
 router = APIRouter()
+logger = logging.getLogger("telemetry")
 
 
 class TelemetryEvent(BaseModel):
@@ -41,7 +43,11 @@ async def ingest_event(
         "tenant_id": current_user.id,
         **event.model_dump(),
     }
-    await kafka_producer.send("raw-telemetry", payload)
+    try:
+        await kafka_producer.send("raw-telemetry", payload)
+    except Exception as exc:
+        logger.exception("Failed to queue telemetry event")
+        raise HTTPException(status_code=503, detail="Telemetry queue unavailable") from exc
     return {"status": "queued", "event_id": payload["event_id"]}
 
 
@@ -61,7 +67,11 @@ async def ingest_batch(
             "tenant_id": current_user.id,
             **event.model_dump(),
         }
-        await kafka_producer.send("raw-telemetry", payload)
+        try:
+            await kafka_producer.send("raw-telemetry", payload)
+        except Exception as exc:
+            logger.exception("Failed to queue telemetry batch")
+            raise HTTPException(status_code=503, detail="Telemetry queue unavailable") from exc
         event_ids.append(payload["event_id"])
 
     return {"status": "queued", "count": len(event_ids), "event_ids": event_ids}

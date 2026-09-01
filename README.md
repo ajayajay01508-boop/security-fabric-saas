@@ -301,7 +301,7 @@ python -m grpc_tools.protoc -I shared/proto \
 Common decorators and utilities available to all Python services:
 
 ```python
-from shared.python_utils.logging import structured_logger
+from shared.python_utils.structured_logging import get_logger
 from shared.python_utils.security import require_auth, rate_limit
 
 logger = structured_logger(__name__)

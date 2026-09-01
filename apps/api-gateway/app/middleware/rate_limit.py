@@ -76,9 +76,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return count <= limit, max(0, limit - count)
 
     async def dispatch(self, request: Request, call_next):
-        # Skip rate limiting for health and metrics
+        # Health and diagnostics must remain available during an incident, but
+        # still expose a consistent header contract to clients and monitors.
         if request.url.path in ("/health", "/metrics", "/docs", "/redoc", "/openapi.json"):
-            return await call_next(request)
+            response = await call_next(request)
+            response.headers["X-RateLimit-Limit"] = str(DEFAULT_LIMIT)
+            response.headers["X-RateLimit-Remaining"] = str(DEFAULT_LIMIT)
+            response.headers["X-RateLimit-Reset"] = str(int(time.time() + DEFAULT_WINDOW))
+            return response
 
         ip = self._get_client_ip(request)
         path = request.url.path

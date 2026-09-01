@@ -75,7 +75,7 @@ def audit_log(action: str):
     def decorator(func: Callable):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
-            from shared.python_utils.logging import get_logger
+            from shared.python_utils.structured_logging import get_logger
             audit = get_logger("audit")
             user = kwargs.get("current_user")
             user_id = getattr(user, "id", "anonymous") if user else "anonymous"

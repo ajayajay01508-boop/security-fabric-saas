@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { CheckCircle, Eye, XCircle } from 'lucide-react'
 import { alertsApi } from '../../lib/api'
 import { useToast } from '../Toast'
@@ -108,7 +108,7 @@ export function AlertsTable({ alerts, onUpdate }: Props) {
         </thead>
         <tbody>
           {alerts.map((a) => (
-            <>
+            <Fragment key={a.id}>
               <tr key={a.id}
                 className={clsx(
                   'border-b border-fabric-border/50 hover:bg-fabric-muted/30 transition-colors cursor-pointer',
@@ -169,7 +169,7 @@ export function AlertsTable({ alerts, onUpdate }: Props) {
                   </td>
                 </tr>
               )}
-            </>
+            </Fragment>
           ))}
           {alerts.length === 0 && (
             <tr>
