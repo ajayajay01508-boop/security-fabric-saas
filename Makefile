@@ -90,7 +90,7 @@ shell-redis: ## Open Redis CLI
 	docker compose exec redis redis-cli
 
 # ── Testing ───────────────────────────────────────────────────
-test: ## Run all 166 Python tests
+test: ## Run all 205 Python tests
 	bash scripts/run-python-tests.sh
 	@echo "$(GREEN)✓ All tests complete$(NC)"
 
