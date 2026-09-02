@@ -1,6 +1,7 @@
 import pytest
 import sys
 import os
+import pickle
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from detector import ThreatDetector
@@ -110,3 +111,54 @@ def test_telnet_protocol_flagged(detector):
     results = [detector.predict(event) for _ in range(20)]
     avg = sum(r["confidence"] for r in results) / len(results)
     assert avg > 0.3
+
+
+class ProbabilityModel:
+    def __init__(self, probability):
+        self.probability = probability
+
+    def predict_proba(self, _features):
+        return [[1 - self.probability, self.probability]]
+
+
+@pytest.mark.parametrize(
+    ("confidence", "severity", "is_threat"),
+    [(0.90, "critical", True), (0.75, "high", True), (0.55, "medium", True), (0.20, "low", False)],
+)
+def test_pickle_model_prediction_thresholds(tmp_path, confidence, severity, is_threat):
+    model_path = tmp_path / f"model-{confidence}.pkl"
+    with model_path.open("wb") as handle:
+        pickle.dump(ProbabilityModel(confidence), handle)
+    model_detector = ThreatDetector(str(model_path))
+    result = model_detector.predict(make_event(destination_port=0, packets=0))
+    assert result["confidence"] == confidence
+    assert result["severity"] == severity
+    assert result["is_threat"] is is_threat
+
+
+def test_onnx_like_model_prediction_branch():
+    class OnnxModel:
+        def run(self, _outputs, inputs):
+            assert "input" in inputs
+            return [[[0.1, 0.9]]]
+
+    model_detector = ThreatDetector()
+    model_detector.model = OnnxModel()
+    model_detector.use_heuristics = False
+    result = model_detector.predict(make_event(protocol="ssh"))
+    assert result["confidence"] == 0.9
+    assert result["severity"] == "critical"
+
+
+def test_unsupported_model_format_raises(tmp_path):
+    path = tmp_path / "model.txt"
+    path.write_text("not a model")
+    with pytest.raises(ValueError, match="Unsupported model format"):
+        ThreatDetector()._load_model(str(path))
+
+
+def test_model_load_failure_falls_back_to_heuristics(tmp_path, monkeypatch):
+    path = tmp_path / "broken.pkl"
+    path.write_bytes(b"broken")
+    detector = ThreatDetector(str(path))
+    assert detector.use_heuristics is True

@@ -14,7 +14,7 @@ run_suite() {
     if [[ "${COVERAGE:-0}" == "1" ]]; then
       "$PYTHON_BIN" -m pytest "$@" -q --tb=short \
         --cov="$coverage_target" --cov-append --cov-branch \
-        --cov-config="$PROJECT_ROOT/pyproject.toml" --cov-report=
+        --cov-config="$PROJECT_ROOT/pyproject.toml" --cov-fail-under=0 --cov-report=
     else
       "$PYTHON_BIN" -m pytest "$@" -q --tb=short
     fi
@@ -34,7 +34,7 @@ run_suite "." "scripts" tests/quality
 
 if [[ "${COVERAGE:-0}" == "1" ]]; then
   cd "$PROJECT_ROOT"
-  "$PYTHON_BIN" -m coverage report --show-missing
+  "$PYTHON_BIN" -m coverage report --show-missing --fail-under=80
   "$PYTHON_BIN" -m coverage xml -o coverage.xml
   "$PYTHON_BIN" -m coverage html -d htmlcov
 fi

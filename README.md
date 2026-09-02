@@ -1,7 +1,7 @@
 # SECURITY FABRIC SAAS
 
 [![Quality Gates](https://github.com/ajayajay01508-boop/security-fabric-saas/actions/workflows/quality.yml/badge.svg)](https://github.com/ajayajay01508-boop/security-fabric-saas/actions/workflows/quality.yml)
-![Branch-aware coverage](https://img.shields.io/badge/branch--aware%20coverage-60%25-yellow)
+![Branch-aware coverage](https://img.shields.io/badge/branch--aware%20coverage-81%25-brightgreen)
 
 > **Real-time threat detection infrastructure. ML-powered. Multi-cloud. Production-grade.**
 
@@ -9,7 +9,7 @@ A distributed security intelligence platform that ingests network telemetry, run
 
 ## Verified quality evidence
 
-- 166 Python/API/service/load-harness tests pass with branch-aware coverage reporting.
+- 205 Python/API/service/load-harness tests pass at 81% branch-aware coverage; CI enforces an 80% minimum.
 - 12 critical browser workflows run across Chromium, Firefox, WebKit and a Pixel 7 mobile-browser profile in CI (48 project/test combinations).
 - CodeQL scans Python and JavaScript/TypeScript on pull requests and weekly.
 - API responses include correlation IDs and defensive browser security headers.
